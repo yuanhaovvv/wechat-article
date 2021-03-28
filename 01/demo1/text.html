@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div id="root">
+        <input v-model="bob" />
+        {{bob}}
+    </div>
+    <script>
+
+        function Observer(data) {
+            for (let key in data) {
+                this.defineReactive(data, key, data[key])
+            }
+        }
+        Observer.prototype.defineReactive = function (data, key, value) {
+            let dep = new Dep()
+            Object.defineProperty(data, key, {
+                enumerable: true,
+                configurable: true,
+                get: function () {
+                    // 收集依赖
+                    dep.depend()
+                    return value
+                },
+                set: function (newVal) {
+                    if (newVal === value) {
+                        return
+                    }
+                    // 更新属性
+                    value = newVal
+                    // 发布订阅
+                    dep.notify()
+                }
+            })
+        }
+
+
+        function Dep() {
+            this.subs = []
+        }
+
+        Dep.target = null
+
+        Dep.prototype.addSubs = function (subs) {
+            this.subs.push(subs)
+        }
+
+        Dep.prototype.depend = function () {
+            if (Dep.target) {
+                this.addSubs(Dep.target)
+            }
+        }
+
+        Dep.prototype.notify = function () {
+            this.subs.forEach(watcher => watcher.update())
+        }
+
+
+
+        function Watcher(vm, expAndFn, cb) {
+            this.vm = vm
+            this.expAndFn = expAndFn
+            this.cb = cb
+            this.value = this.get()
+        }
+
+        Watcher.prototype.get = function () {
+            let value = ''
+            Dep.target = this
+            value = this.vm[this.expAndFn]
+            Dep.target = null
+            return value
+        }
+
+        Watcher.prototype.update = function () {
+            this.run()
+        }
+
+        Watcher.prototype.run = function () {
+            let newValue = this.get()
+            this.cb(newValue)
+        }
+
+        function Compiler(data) {
+            this.data = data
+            let root = document.querySelector('#root'),
+                fragment = document.createDocumentFragment(),
+                child;
+            // 放入fragment 避免直接操作DOM
+            while (child = root.firstChild) {
+                fragment.appendChild(child)
+            }
+            this.compiler(fragment)
+            root.appendChild(fragment)
+            document.body.appendChild(root)
+        }
+
+        Compiler.prototype.compiler = function (fragment) {
+            let nodes = fragment.childNodes
+            // 递归
+            for (var i = 0; i < nodes.length; i++) {
+                let node = nodes[i]
+                // 文本节点
+                if (node.nodeType === 3) {
+                    this.compilerText(node)
+
+                }
+                // 元素
+                if (node.nodeType === 1) {
+                    // 处理属性
+                    this.compilerAttr(node)
+                }
+            }
+        }
+
+        Compiler.prototype.compilerText = function (node) {
+            let reg = /\{\{(\w+)\}\}/;
+            if (reg.test(node.textContent)) {
+                directive['text'](node, RegExp.$1.trim())
+            }
+        }
+
+        Compiler.prototype.compilerAttr = function (node) {
+            let attrs = node.attributes
+            for (var i = 0; i < attrs.length; i++) {
+                let attr = attrs[i]
+                if (attr.name.includes('v-')) {
+                    let pre = attr.name.split('-')[1];
+                    directive[pre](this.data, node, attr.value)
+                }
+            }
+        }
+
+        const directive = {
+            text: function (node, key) {
+                this.update(node, key, 'text')
+            },
+            model: function (data, node, key) {
+                this.update(node, key, 'model')
+                node.addEventListener('input', (e) => {
+                    let target = e.target
+                    data[key] = target.value
+                })
+            },
+            update: function (node, key, pre) {
+                let fn = updateCallback[pre]
+
+                function update(newValue) {
+                    fn && fn(node, newValue)
+                }
+                let watcher = new Watcher(data, key, update)
+                fn && fn(node, watcher.value)
+            }
+        }
+
+        const updateCallback = {
+            text: function (node, val) {
+                node.textContent = val
+            },
+            model: function (node, val) {
+                node.value = val
+            }
+        }
+
+
+
+
+        let data = {
+            bob: '哈哈',
+            jack: ''
+        }
+        new Observer(data)
+
+        new Compiler(data)
+
+
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单实现Vue</title>
+
+</head>
+
+<body>
+
+    <div id="root">
+        <div>asd</div>
+        <h1>{{title}}</h1>
+        <input type="text" v-model="input">
+        {{input}}
+
+        <button v-on:click="change">change</button>
+        <div v-text="text"></div>
+        <div v-html="html"></div>
+        {{count}}
+
+    </div>
+    <script src="./js/util.js"></script>
+    <script src="./js/Compiler.js"></script>
+    <script src="./js/Observer.js"></script>
+    <script src="./js/Dep.js"></script>
+    <script src="./js/Watcher.js"></script>
+    <script src="./js/Mvvm.js"></script>
+    <script>
+        var vue = new Mvvm({
+            el: '#root',
+            data: {
+                html: '<p>我是P标签</p>',
+                title: 'hello Vue',
+                input: '测试',
+                text: ' text',
+                count: 0
+            },
+            methods: {
+                change: function () {
+                    this.count++
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
